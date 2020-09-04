@@ -181,6 +181,7 @@ export class InstallProvider {
     res: ServerResponse,
     options?: CallbackOptions,
   ): Promise<void> {
+    this.logger.debug('handling callback');
     let parsedUrl;
     let code: string;
     let state: string;
@@ -199,7 +200,9 @@ export class InstallProvider {
       }
 
       installOptions = await this.stateStore.verifyStateParam(new Date(), state);
+      this.logger.debug('clientOptions ', this.clientOptions);
       const client = new WebClient('', this.clientOptions);
+      this.logger.debug('verifyStateParam ok');
 
       let resp;
       let installation: Installation;
@@ -242,12 +245,15 @@ export class InstallProvider {
         }
       } else {
         // convert response type from WebApiCallResult to OAuthResponse
+        this.logger.debug('calling client.oauth.v2.access');
         resp = await client.oauth.v2.access({
           code,
           client_id: this.clientId,
           client_secret: this.clientSecret,
           redirect_uri: installOptions.redirectUri,
         }) as unknown as OAuthV2Response;
+
+        this.logger.debug('client.oauth.v2.access ok');
 
         // get botId
         const botId = await getBotId(resp.access_token, this.clientOptions);
@@ -288,6 +294,7 @@ export class InstallProvider {
       }
 
       // save access code to installationStore
+      this.logger.debug('attempting to storeInstallation');
       await this.installationStore.storeInstallation(installation, this.logger);
       if (options !== undefined && options.success !== undefined) {
         this.logger.debug('calling passed in options.success');
